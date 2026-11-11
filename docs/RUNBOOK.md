@@ -88,17 +88,9 @@ The removed backend workflows `db-clean.yml` and `db-clean-seed.yml` (and `db-re
 2. Cloud SQL → `repeato-db` → Users → `repeato`: set a new password; update `DB_PASSWORD` in the backend key file and the GitHub secret. If production uses the same user and password, plan this as a short maintenance step (deploy staging and production right after with the new value).
 3. Razorpay dashboard (test mode): regenerate the test key; update `RAZORPAY_KEY_*_STAGING` wherever that test key was used.
 
-### 6.2 Access to this repository
+### 6.2 This repository
 
-`ritesh405` has only read access to `repeato-in/repeato.infra`, so the agent could not push. Either give `ritesh405` write access (Settings → Collaborators and teams), or push from your own account:
-
-```powershell
-cd C:\Ritesh\workspace\repeato_workspace\repeato.infra
-git push -u origin main
-git push -u origin infra-v1
-```
-
-Then open the pull request `infra-v1` → `main` and merge it. The app repository workflows check out `repeato-in/repeato.infra` at `main` (variable `INFRA_REF` to pin another ref). The repository is public, so no token is needed; if you make it private, add a fine-grained token with read access to its contents as the secret `INFRA_READ_TOKEN` in each app repository (the workflows already use it when it exists).
+The branches `main` (first commit, README only) and `infra-v1` (everything) are pushed. Because `infra-v1` reached GitHub first, GitHub made it the **default branch**: Settings → General → Default branch → switch to `main`. Then open the pull request `infra-v1` → `main` and merge it. The app repository workflows check out `repeato-in/repeato.infra` at `main` (variable `INFRA_REF` to pin another ref), so merge this before the app repository branches. The repository is public, so no token is needed; if you make it private, add a fine-grained token with read access to its contents as the secret `INFRA_READ_TOKEN` in each app repository (the workflows already use it when it exists).
 
 ### 6.3 Merge the app repository branches
 
