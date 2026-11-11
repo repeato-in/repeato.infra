@@ -34,6 +34,10 @@ try {
     Assert-EnvSet @("PUBLIC_BASE_URL_$suffix", "BASE_URL_$suffix", "RAZORPAY_API_KEY_$suffix", "GOOGLE_MAPS_API_KEY_$suffix", "FIREBASE_SERVICE_ACCOUNT_$($suffix)_JSON")
 
     $source = Export-Source -RepoPath $RepoPath -Commit $commit -WorkDir $workDir
+    foreach ($desktop in 'windows', 'linux', 'macos') {
+        $folder = Join-Path $source $desktop
+        if (Test-Path -LiteralPath $folder) { Remove-Item -LiteralPath $folder -Recurse -Force }
+    }
 
     Write-Step 'Building the web app'
     Invoke-Native flutter @('clean') -WorkingDirectory $source -FailMessage 'flutter clean failed'
