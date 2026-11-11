@@ -1,0 +1,32 @@
+# Checks the scripts of this repository on every pull request: PowerShell parse and PSScriptAnalyzer (tools/check-scripts.ps1), and actionlint on this repository's workflows. GitHub-hosted only: this repository is public, so it never runs on a self-hosted runner.
+name: Check
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -RequiredVersion 1.23.0
+
+      - name: Parse and analyze
+        shell: pwsh
+        run: ./tools/check-scripts.ps1
+
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color

@@ -1,0 +1,7 @@
+.work/
+dev/.run/
+releases/logs/
+app.yaml
+*.log
+.env*
+*.json.key

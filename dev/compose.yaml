@@ -1,0 +1,27 @@
+# Local development database for Repeato: MySQL 8 in the container repeato-mysql-dev on 127.0.0.1:3308 with the database repeato_dev_local. The test databases (repeato-mysql-test-3307 on 3307, repeato-mysql-test2 on 3309) belong to the backend test setup and are not managed here.
+name: repeato-dev
+
+services:
+  mysql-dev:
+    image: mysql:8.0
+    container_name: repeato-mysql-dev
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: repeato-local-root
+      MYSQL_DATABASE: repeato_dev_local
+      TZ: Asia/Kolkata
+    command: ["--max-connections=500", "--default-time-zone=+05:30"]
+    ports:
+      - "127.0.0.1:3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prepeato-local-root"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    volumes:
+      - repeato-mysql-dev-data:/var/lib/mysql
+
+volumes:
+  repeato-mysql-dev-data:
+    name: repeato-mysql-dev-data
