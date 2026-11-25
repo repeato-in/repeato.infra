@@ -60,7 +60,19 @@ Why the customer app has two local files: inside the Android emulator, `localhos
 | Console (admin) | `100` (second admin `101`) | `1234` |
 | Customer app, partner app | any 10-digit number | any 4 digits |
 
-No SMS is sent (OTP bypass). A new number in the customer app is a new customer. The demo society and its shops are in the local database (data releases); a customer finds them when the platform setting `demo.enabled` (Demo mode) is on in the console.
+No SMS is sent (OTP bypass). A new number in the customer app is a new customer.
+
+**What the local database holds.** A new local database has no real data: no real societies, shops or customers. It holds only what the data releases bring: the demo world (societies Repeato Demo Residency, Sylvan Heights, Green Park and Repeato Demo Heights, 25 demo shops, demo customers and partners). So searching a real society such as "Aldea" finds nothing locally. That is expected, not a fault.
+
+To use the app locally, sign in with the **demo customer `9000000000`** (any 4-digit OTP): Login at the top right of the place screen. A demo account always sees the demo world, with its society, Home, shops and products. Other demo accounts: `90000101xx` (`9000010100`, `9000010200`, ...), the demo partners and residents; list them with:
+
+```powershell
+docker exec repeato-mysql-dev mysql -uroot -prepeato-local-root repeato_dev_local -e "SELECT id, firstName, mobileNumber FROM Users WHERE isDemo=1"
+```
+
+Place search by name (Google) and the map need keys; without them only pincode and demo society searches answer. Set them before `up.ps1` and `android.ps1`: `$env:REPEATO_DEV_GOOGLE_PLACES_API_KEY = '<key>'` (backend). The customer app's map key is already in `env/dev.json`.
+
+Real data locally: restore a dump of a cloud database into `repeato_dev_local` (`retire-cloud-dev.md`, step 2). Never point the local stack at a cloud database.
 
 ## 4. Way A: by script
 
