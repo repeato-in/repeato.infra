@@ -24,7 +24,7 @@ pwsh release/release.ps1 -Env prod             # type the release id and the pro
 
 What it does: takes the commit each app runs on staging (tag `deployed/staging`), checks each is on GitHub and on `main`, warns about uncommitted work in your working copies (never deployed), creates the annotated tag `vYYYY.MM.DD-N` on those commits in all four repositories and pushes the tags, then deploys in this order and stops at the first failure:
 
-1. **backend**: clean export, `bun install`, `package-lock.json` from `bun.lock`, Cloud SQL proxy, bootstrap and database check, migration status then migrations, data releases `--status`, `--dry-run`, `--commit --confirm=<DB name>`, `app.yaml` from the template, upload with retry (`--no-promote`), health check of the new version, traffic to it, `dispatch.yaml`, health check of `api` and `admin`.
+1. **backend**: clean export, `bun install` (three tries, 10 s then 20 s apart: a dropped download such as bcrypt's prebuilt binary fails it otherwise), `package-lock.json` from `bun.lock`, Cloud SQL proxy, bootstrap and database check, migration status then migrations, data releases `--status`, `--dry-run`, `--commit --confirm=<DB name>`, `app.yaml` from the template, upload with retry (`--no-promote`), health check of the new version, traffic to it, `dispatch.yaml`, health check of `api` and `admin`.
 2. **console**, 3. **partner app**: `vercel pull`, remote build with `--build-env`, deploy to the production target of the prod Vercel project; the partner deploy also checks the Firebase keys and the Play Store ownership file.
 4. **customer web**: `flutter build web --pwa-strategy=none`, `firebase deploy --only hosting` to `repeato-web-app`, site check.
 

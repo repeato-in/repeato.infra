@@ -168,6 +168,21 @@ function Invoke-AppDeployWithRetry {
     }
 }
 
+function Install-DependenciesWithRetry {
+    param([string]$SourceDir, [int]$MaxAttempts = 3)
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        try {
+            Invoke-Native bun @('install', '--frozen-lockfile') -WorkingDirectory $SourceDir -FailMessage 'Installing dependencies failed'
+            return
+        } catch {
+            if ($attempt -eq $MaxAttempts) { throw }
+            $backoffSeconds = 10 * $attempt
+            Write-Warning "Installing dependencies failed (attempt $attempt/$MaxAttempts; a download such as bcrypt's prebuilt binary can drop). Retrying in $backoffSeconds seconds..."
+            Start-Sleep -Seconds $backoffSeconds
+        }
+    }
+}
+
 function Test-VersionExists {
     param([string]$ServiceName)
     if (Test-DryRun) { return $false }
@@ -243,7 +258,7 @@ try {
 
     Write-Step 'Installing dependencies and writing package-lock.json from bun.lock for the App Engine build'
     Add-BunToPath
-    Invoke-Native bun @('install', '--frozen-lockfile') -WorkingDirectory $source -FailMessage 'Installing dependencies failed'
+    Install-DependenciesWithRetry -SourceDir $source
     Invoke-Native node @('scripts/npm-lock-from-bun.js') -WorkingDirectory $source -FailMessage 'Writing package-lock.json from bun.lock failed'
 
     Write-Step 'Authenticating to GCP (private gcloud config for this run, your own gcloud login is untouched)'
