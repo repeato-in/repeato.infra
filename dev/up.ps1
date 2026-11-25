@@ -1,4 +1,4 @@
-# Starts the whole Repeato stack on this laptop with no cloud at all: MySQL repeato-mysql-dev (127.0.0.1:3308, repeato_dev_local), migrations and data releases, then the backend (3000), console (5174), partner app (5175) and customer web (5176) from the working copies, with SMS off, OTP bypass and the backend's own fakes for storage, payments, email and push. Prints the URLs and how to sign in.
+# Starts the whole Repeato stack on this laptop with no cloud at all (guide: docs/local-dev.md): MySQL repeato-mysql-dev (127.0.0.1:3308, repeato_dev_local), migrations and data releases, then the backend (3000), console (5174), partner app (5175) and customer web (5176) from the working copies, with the backend settings of dev/backend.env (SMS off, OTP bypass, the backend's own fakes for storage, payments, email and push) and the customer web on env/dev-localhost.json. Prints the URLs and how to sign in.
 #Requires -Version 7.4
 [CmdletBinding()]
 param(
@@ -25,47 +25,17 @@ if (Test-Path $pidFile) {
 $database = @{ Host = '127.0.0.1'; Port = 3308; Name = 'repeato_dev_local'; User = 'root'; Password = 'repeato-local-root' }
 $api = 'http://localhost:3000/api/v1'
 
-$backendEnv = @{
-    SKIP_DOTENV                    = 'true'
-    NODE_ENV                       = 'development'
-    PORT                           = '3000'
-    DB_HOST                        = $database.Host
-    DB_HOST_PORT                   = [string]$database.Port
-    DB_NAME                        = $database.Name
-    DB_USERNAME                    = $database.User
-    DB_PASSWORD                    = $database.Password
-    DB_DIALECT                     = 'mysql'
-    DB_SOCKET_PATH                 = ''
-    JWT_SECRET                     = 'local-dev-jwt-secret'
-    JWT_EXPIRES_IN                 = '3600'
-    JWT_REFRESH_SECRET             = 'local-dev-refresh-secret'
-    JWT_REFRESH_EXPIRES_IN         = '604800'
-    REDIS_DISABLED                 = 'true'
-    MESSAGING_ENABLED              = 'false'
-    NOTIFICATIONS_ENABLED          = 'false'
-    OTP_BYPASS                     = 'true'
-    TEST_MODE                      = 'true'
-    USE_LOCAL_STORAGE              = 'true'
-    GCS_KEY_FILE                   = ''
-    GCS_ENV_PREFIX                 = 'dev'
-    BACKEND_URL                    = 'http://localhost:3000'
-    APP_BASE_URL                   = 'http://localhost:3000'
-    APP_WEB_BASE_URL               = "http://localhost:$CustomerPort"
-    CONSOLE_URL                    = 'http://localhost:5174'
-    APP_DEEP_LINK_SCHEME           = 'repeato'
-    APP_ANDROID_STORE_URL          = 'https://play.google.com/store/apps/details?id=com.repeato.app'
-    APP_IOS_STORE_URL              = 'https://apps.apple.com/app/repeato/id123456789'
-    CORS_ORIGIN                    = "http://localhost:5174,http://localhost:5175,http://localhost:$CustomerPort,http://localhost:3000"
-    RAZORPAY_KEY_ID                = 'rzp_test_local'
-    RAZORPAY_KEY_SECRET            = 'local-fake-secret'
-    RAZORPAY_WEBHOOK_SECRET        = 'local-fake-webhook'
-    PRIMARY_MESSAGING_PROVIDER     = 'authkey'
-    ANTHROPIC_API_KEY              = ''
-    GOOGLE_PLACES_API_KEY          = [string]$env:REPEATO_DEV_GOOGLE_PLACES_API_KEY
-    SCHEDULER_TIMEZONE             = 'Asia/Kolkata'
-    BACKGROUND_JOB_CLEANUP_ENABLED = 'false'
-    DISABLE_SCHEDULERS             = 'true'
+$backendEnvFile = Join-Path $PSScriptRoot 'backend.env'
+$backendEnv = @{}
+foreach ($line in Get-Content -LiteralPath $backendEnvFile) {
+    if ($line -match '^\s*#' -or $line -notmatch '=') { continue }
+    $pair = $line -split '=', 2
+    $backendEnv[$pair[0].Trim()] = $pair[1]
 }
+$backendEnv.APP_WEB_BASE_URL = "http://localhost:$CustomerPort"
+$backendEnv.CORS_ORIGIN = (@($backendEnv.CORS_ORIGIN -split ',') + "http://localhost:$CustomerPort" | Select-Object -Unique) -join ','
+if ($env:REPEATO_DEV_GOOGLE_PLACES_API_KEY) { $backendEnv.GOOGLE_PLACES_API_KEY = $env:REPEATO_DEV_GOOGLE_PLACES_API_KEY }
+if ($backendEnv.DB_HOST -ne $database.Host -or $backendEnv.DB_HOST_PORT -ne [string]$database.Port -or $backendEnv.DB_NAME -ne $database.Name) { throw "$backendEnvFile must name the local database $($database.Name) on $($database.Host):$($database.Port)." }
 
 function Start-AppProcess {
     param([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory, [hashtable]$Environment, [int]$Port)
@@ -130,13 +100,7 @@ if ('partner' -in $selected) {
     Start-AppProcess -Name 'partner' -FilePath 'bun' -Arguments @('run', 'dev') -WorkingDirectory (Get-RepeatoApp 'partner').Path -Environment @{ PORT = '5175'; NEXT_PUBLIC_API_URL = $api; NEXT_PUBLIC_APP_ENV = 'dev' } -Port 5175
 }
 if ('customer' -in $selected) {
-    $defines = @(
-        '--dart-define=APP_ENV=dev',
-        "--dart-define=BASE_URL=$api",
-        '--dart-define=PUBLIC_BASE_URL=http://localhost:3000',
-        '--dart-define=RAZORPAY_API_KEY=rzp_test_local'
-    )
-    if ($env:REPEATO_DEV_GOOGLE_MAPS_API_KEY) { $defines += "--dart-define=GOOGLE_MAPS_API_KEY=$env:REPEATO_DEV_GOOGLE_MAPS_API_KEY" }
+    $defines = @('--dart-define-from-file=env/dev-localhost.json')
     Start-AppProcess -Name 'customer' -FilePath 'flutter' -Arguments (@('run', '-d', 'web-server', '--web-port', [string]$CustomerPort, '--web-hostname', 'localhost') + $defines) -WorkingDirectory (Get-RepeatoApp 'customer').Path -Environment @{} -Port $CustomerPort
 }
 
@@ -157,4 +121,5 @@ Write-Host "  Customer web http://localhost:$CustomerPort"
 Write-Host ''
 Write-Host 'Sign in: any mobile number with any 4-digit OTP (OTP bypass, no SMS is sent). Console admin: mobile 100, OTP 1234 (seeded admin; 101 is a second admin).'
 Write-Host 'Payments, file storage, email and push use the backend''s local fakes (TEST_MODE=true); nothing reaches Razorpay, Google Cloud, AuthKey or Firebase.'
+Write-Host 'Customer app on the Android phone emulator: pwsh dev/android.ps1 (in a second window; r hot reload, q quit)'
 Write-Host "Logs: $runDir    Stop everything: pwsh $(Join-Path $PSScriptRoot 'down.ps1')"

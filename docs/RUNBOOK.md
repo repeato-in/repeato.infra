@@ -9,6 +9,9 @@ Everything you do to change, test, release and roll back Repeato. The model behi
    - Only some apps: `pwsh dev/up.ps1 -Apps backend,console`. Logs: `dev/.run/<app>.log`.
    - Stop: `pwsh dev/down.ps1` (keeps the data), `-KeepDb` (stop only the apps), `-Reset` (delete the local database too).
    - Optional keys for maps and place search on the laptop: set `$env:REPEATO_DEV_GOOGLE_MAPS_API_KEY` and `$env:REPEATO_DEV_GOOGLE_PLACES_API_KEY` before `up.ps1`.
+   - Customer app on the Android phone emulator (Pixel 8, hot reload): `pwsh dev/android.ps1` in a second window. On your own Android phone over USB: `pwsh dev/android.ps1 -Device <serial>`.
+   - Debugging one app with breakpoints: open its repo in VS Code and press F5 with its `local` launch (`Backend: local`, `Console: local (server + browser)`, `Partner app: local (server + browser)`, `Customer app: local backend (Android emulator)`). They use the same settings as the script (`dev/backend.env`, the apps' `.env.local`, the customer app's `env/dev.json`).
+   - The full guide (set-up once per laptop, which settings file each app reads, both ways of running, mixing them, troubleshooting): `docs/local-dev.md`.
 2. Work on a branch from `origin/main`, push, open a pull request into `main`. CI runs on the pull request.
 3. Merge. Staging deploys by itself (workflow **Deploy Staging** in that repository). If Actions minutes are out, or the workflow is switched off, run `pwsh release/release.ps1 -Env staging` (or `-Repos backend` for one app).
 4. Test on staging: https://staging.app.repeato.in, the staging console and partner app, `https://api-staging-dot-repeato-439413.uc.r.appspot.com/api/health`.
