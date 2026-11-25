@@ -18,7 +18,7 @@ release/release.ps1        one command: staging, production release, rollback, h
 apps/<app>/deploy.ps1      the deploy of one app from one commit or tag (backend, console, partner, customer)
 lib/Common.psm1            app list, key loading, clean source export, dry-run runner, checks
 lib/VercelDeploy.ps1       the Vercel procedure shared by console and partner
-dev/                       compose.yaml, up.ps1, down.ps1: the whole stack on this laptop
+dev/                       compose.yaml, up.ps1, down.ps1: the whole stack on this laptop; android.ps1: the customer app on the Pixel 8 emulator (guide: docs/local-dev.md)
 runner/README.md           a GitHub self-hosted runner on the laptop or a small VM
 releases/                  one release record per staging deploy or production release
 docs/                      RUNBOOK, branching model, cloud dev retirement, branch clean-up, git identity
@@ -33,6 +33,7 @@ pwsh release/release.ps1 -Env prod               # the staging commits, tagged v
 pwsh release/release.ps1 -Env prod -Tag v2026.11.10-1   # roll back to an earlier release
 pwsh release/release.ps1 -Env prod -DryRun       # print every step, change nothing
 pwsh dev/up.ps1                                  # local stack; dev/down.ps1 stops it
+pwsh dev/android.ps1                             # customer app on the Pixel 8 emulator against the local stack
 ```
 
-Start with `docs/RUNBOOK.md`.
+Start with `docs/RUNBOOK.md`. Running everything on this laptop: `docs/local-dev.md`.
